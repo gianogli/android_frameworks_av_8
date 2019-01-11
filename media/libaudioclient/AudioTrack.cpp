@@ -27,6 +27,7 @@
 #include <binder/IPCThreadState.h>
 #include <media/AudioTrack.h>
 #include <utils/Log.h>
+#include <cutils/properties.h>
 #include <private/media/AudioTrackShared.h>
 #include <media/IAudioFlinger.h>
 #include <media/AudioPolicyHelper.h>
@@ -584,6 +585,11 @@ status_t AudioTrack::start()
     } else {
         mState = STATE_ACTIVE;
     }
+
+    char track_state_prop[2];
+    snprintf(track_state_prop, 2, "%d", mState);
+    property_set("audio.track_start", track_state_prop);
+
     (void) updateAndGetPosition_l();
 
     // save start timestamp
@@ -682,6 +688,7 @@ status_t AudioTrack::start()
 void AudioTrack::stop()
 {
     AutoMutex lock(mLock);
+
     if (mState != STATE_ACTIVE && mState != STATE_PAUSED) {
         return;
     }
@@ -694,6 +701,10 @@ void AudioTrack::stop()
                 "stop() called with %u frames delivered", mReleased.value());
         mReleased = 0;
     }
+
+    char track_state_prop[2];
+    snprintf(track_state_prop, 2, "%d", mState);
+    property_set("audio.track_start", track_state_prop);
 
     mProxy->interrupt();
     mAudioTrack->stop();
